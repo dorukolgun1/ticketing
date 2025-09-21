@@ -19,10 +19,7 @@ public class OrderEntity {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String orderCode;
-
-    @Column(name = "idempotency_key", unique = true)
-    private String idempotencyKey;
+    private String orderCode;   // idempotency key
 
     @Column(nullable = false)
     private String eventCode;

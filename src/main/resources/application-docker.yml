@@ -1,0 +1,14 @@
+spring:
+  application.name: ticketing-api
+  datasource:
+    url: jdbc:postgresql://db:5432/ticketing
+    username: ticket
+    password: ticket
+  jpa:
+    hibernate.ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+management:
+  endpoints.web.exposure.include: health,info,metrics,prometheus
+server:
+  tomcat.threads.max: 1

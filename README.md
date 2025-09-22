@@ -10,7 +10,7 @@ The **Ticketing System** is a **high-concurrency backend** built with **Java 21*
 - 📊 **Observability** → Live metrics and dashboards with Prometheus & Grafana
 - 🛡️ **Resilience** → Idempotency keys, retry mechanisms, and robust error handling
 
-This is not just a demo — it’s a **production-style backend foundation** that could power a real-world ticketing platform.
+This is not just a demo it’s a **production-style backend foundation** that could power a real-world ticketing platform.
 
 ---
 

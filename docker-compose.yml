@@ -5,14 +5,16 @@ services:
     environment:
       POSTGRES_DB: ticketing
       POSTGRES_USER: ticket
-      POSTGRES_PASSWORD: ticket
-    ports: ["5432:5432"]
-    volumes: [ "db_data:/var/lib/postgresql/data" ]
+      POSTGRES_PASSWORD: ticketpw
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL","pg_isready -U ticket -d ticketing"]
+      test: ["CMD-SHELL", "pg_isready -U ticket -d ticketing"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 20
 
   app:
     build:
@@ -24,25 +26,51 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      # Aşağıdaki 4 env ile profile’a gerek kalmadan DB ayarını garanti ediyoruz
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ticketing
       SPRING_DATASOURCE_USERNAME: ticket
-      SPRING_DATASOURCE_PASSWORD: ticket
+      SPRING_DATASOURCE_PASSWORD: ticketpw
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
     ports:
       - "8080:8080"
 
-
   pgadmin:
-    image: dpage/pgadmin4:8
+    image: dpage/pgadmin4:8.11
     container_name: ticketing-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com   # <-- değiştir
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin123
     ports:
       - "5050:80"
     depends_on:
       db:
         condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: ticketing-prometheus
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      app:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:11.1.4
+    container_name: ticketing-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./docker/grafana/dashboards_json:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
 
 volumes:
   db_data:

@@ -2,22 +2,22 @@ package ticketing.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import ticketing.controller.dto.EventDto;
-import ticketing.repository.entity.EventEntity;
-import ticketing.service.domain.Event;
+import ticketing.dto.CreateEventRequest;
+import ticketing.dto.EventDto;
+import ticketing.entity.EventEntity;
+import ticketing.domain.Event;
 
 @Mapper(componentModel = "spring", config = MapStructConfig.class)
 public interface EventMapper {
 
-    // Entity -> Domain
-    @Mapping(target = "id",        source = "id")
-    @Mapping(target = "code",      source = "code")
-    @Mapping(target = "name",      source = "name")
-    @Mapping(target = "startTime", source = "startTime")
-    @Mapping(target = "endTime",   source = "endTime")
+    // Request -> Domain (CreateEventRequest'te id yok, domain'de olabilir; ignore et)
+    @Mapping(target = "id", ignore = true)
+    Event toDomain(CreateEventRequest req);
+
+    // Entity <-> Domain
     Event toDomain(EventEntity e);
 
-    // Domain -> Entity
+    // id/createdAt gibi JPA alanları entity tarafında yönetiliyorsa gerekirse ignore eklenebilir
     EventEntity toEntity(Event d);
 
     // Domain -> DTO

@@ -2,78 +2,103 @@ package ticketing.service;
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
-import lombok.RequiredArgsConstructor;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import io.micrometer.core.instrument.Timer;
+import jakarta.persistence.OptimisticLockException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ticketing.dto.OrderDto;
+import ticketing.dto.PurchaseRequest;
 import ticketing.mapper.OrderMapper;
-import ticketing.repository.InventoryRepository;
 import ticketing.repository.OrderRepository;
-import ticketing.repository.entity.OrderEntity;
-import ticketing.service.domain.Order;
-import ticketing.service.domain.enums.OrderStatus;
-import ticketing.service.domain.enums.TicketType;
+import ticketing.entity.OrderEntity;
+import ticketing.enums.OrderStatus;
 
-import java.time.Instant;
-import java.util.UUID;
+import java.util.NoSuchElementException;
 
 @Service
-@RequiredArgsConstructor
 public class OrderService {
 
-    private final InventoryRepository inventoryRepo;
     private final OrderRepository orderRepo;
+    private final InventoryService inventoryService;
     private final OrderMapper mapper;
-    private final MeterRegistry registry;
 
-    private Counter ticketsSold() { return Counter.builder("tickets_sold_total").register(registry); }
-    private Counter conflicts()   { return Counter.builder("purchase_conflict_total").register(registry); }
+    private final Counter soldCounter;
+    private final Counter conflictCounter;
+    private final Timer purchaseTimer;
 
-    @Transactional
-    public Order purchaseOptimistic(String idempotencyKey, String eventCode, TicketType type, int qty) {
-        var existing = orderRepo.findByOrderCode(idempotencyKey);
-        if (existing.isPresent()) return mapper.toDomain(existing.get());
+    public OrderService(OrderRepository orderRepo,
+                        InventoryService inventoryService,
+                        OrderMapper mapper,
+                        MeterRegistry registry) {
+        this.orderRepo = orderRepo;
+        this.inventoryService = inventoryService;
+        this.mapper = mapper;
+        this.soldCounter = Counter.builder("tickets_sold_total").register(registry);
+        this.conflictCounter = Counter.builder("purchase_conflict_total").register(registry);
+        this.purchaseTimer = Timer.builder("purchase_latency")
+                .publishPercentiles(0.95, 0.99)
+                .register(registry);
+    }
 
-        for (int attempt = 0; attempt < 3; attempt++) {
+    public Page<OrderDto> list(String eventCode, Pageable pageable) {
+        return orderRepo.findByEventCode(eventCode, pageable)
+                .map(mapper::toDomain)
+                .map(mapper::toDto);
+    }
+
+    public OrderDto get(long id) {
+        return orderRepo.findById(id)
+                .map(mapper::toDomain)
+                .map(mapper::toDto)
+                .orElseThrow(() -> new NoSuchElementException("Order not found: " + id));
+    }
+
+    public OrderDto purchase(PurchaseRequest req, String idempotencyKey, String strategy) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new IllegalStateException("Idempotency-Key header is required");
+        }
+        var existing = orderRepo.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            return mapper.toDto(mapper.toDomain(existing.get()));
+        }
+        return purchaseTimer.record(() -> doPurchaseWithRetry(req, idempotencyKey, strategy));
+    }
+
+    private OrderDto doPurchaseWithRetry(PurchaseRequest req, String idempotencyKey, String strategy) {
+        int attempts = 0;
+        int maxAttempts = 3;
+        while (true) {
             try {
-                var inv = inventoryRepo.findByEventCodeAndTicketType(eventCode, type)
-                        .orElseThrow(() -> new IllegalArgumentException("Inventory not found"));
-                if (inv.getSold() + qty > inv.getTotal()) throw new IllegalStateException("Not enough stock");
-
-                var updated = inv.toBuilder().sold(inv.getSold() + qty).build();
-                inventoryRepo.saveAndFlush(updated); // optimistic @Version
-
-                var saved = orderRepo.save(newOrderEntity(idempotencyKey, eventCode, type, qty));
-                ticketsSold().increment(qty);
-                return mapper.toDomain(saved);
-            } catch (ObjectOptimisticLockingFailureException ex) {
-                conflicts().increment();
+                return doPurchaseOnce(req, idempotencyKey, strategy);
+            } catch (OptimisticLockException ex) {
+                conflictCounter.increment();
+                if (++attempts >= maxAttempts) {
+                    throw new IllegalStateException("Concurrency conflict, please retry");
+                }
+                // küçük backoff istersen: Thread.sleep(10L);
             }
         }
-        throw new IllegalStateException("Concurrent update, please retry");
     }
 
     @Transactional
-    public Order purchasePessimistic(String idempotencyKey, String eventCode, TicketType type, int qty) {
-        var existing = orderRepo.findByOrderCode(idempotencyKey);
-        if (existing.isPresent()) return mapper.toDomain(existing.get());
+    protected OrderDto doPurchaseOnce(PurchaseRequest req, String idempotencyKey, String strategy) {
+        // Stok rezervasyonu/güncellemesi (enum ile)
+        inventoryService.reserve(req.eventCode(), req.ticketType(), req.quantity(), strategy);
 
-        var inv = inventoryRepo.lockForUpdate(eventCode, type)
-                .orElseThrow(() -> new IllegalArgumentException("Inventory not found"));
-        if (inv.getSold() + qty > inv.getTotal()) throw new IllegalStateException("Not enough stock");
-
-        inventoryRepo.saveAndFlush(inv.toBuilder().sold(inv.getSold() + qty).build());
-
-        var saved = orderRepo.save(newOrderEntity(idempotencyKey, eventCode, type, qty));
-        ticketsSold().increment(qty);
-        return mapper.toDomain(saved);
-    }
-
-    private OrderEntity newOrderEntity(String orderCode, String eventCode, TicketType type, int qty) {
-        if (orderCode == null || orderCode.isBlank()) orderCode = UUID.randomUUID().toString();
-        return OrderEntity.builder()
-                .orderCode(orderCode).eventCode(eventCode).ticketType(type)
-                .quantity(qty).status(OrderStatus.CONFIRMED).createdAt(Instant.now())
+        // Order kaydet (ENUM alanlar)
+        OrderEntity ent = OrderEntity.builder()
+                .eventCode(req.eventCode())
+                .ticketType(req.ticketType())
+                .quantity(req.quantity())
+                .status(OrderStatus.CONFIRMED)
+                .idempotencyKey(idempotencyKey)
                 .build();
+
+        var saved = orderRepo.save(ent);
+
+        soldCounter.increment(req.quantity());
+        return mapper.toDto(mapper.toDomain(saved));
     }
 }

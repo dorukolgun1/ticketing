@@ -1,34 +1,40 @@
 package ticketing.controller;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
-import ticketing.controller.dto.OrderResponse;
-import ticketing.controller.dto.PurchaseRequest;
+import ticketing.dto.OrderDto;
+import ticketing.dto.PurchaseRequest;
 import ticketing.service.OrderService;
-import ticketing.service.domain.Order;
-import ticketing.service.domain.enums.TicketType;
 
 @RestController
 @RequestMapping("/api/v1/orders")
-@RequiredArgsConstructor
 public class OrderController {
 
     private final OrderService orderService;
 
+    public OrderController(OrderService orderService) { this.orderService = orderService; }
+
+    @Operation(summary = "Purchase tickets")
     @PostMapping("/purchase")
-    public ResponseEntity<OrderResponse> purchase(
-            @RequestHeader("Idempotency-Key") String idemKey,
-            @RequestParam(defaultValue = "optimistic") String strategy,
-            @RequestBody PurchaseRequest req) {
+    public OrderDto purchase(@RequestHeader(name = "Idempotency-Key") String idemKey,     // <-- isim verildi
+                             @RequestParam(name = "strategy", defaultValue = "optimistic") String strategy,
+                             @RequestBody @Valid PurchaseRequest req) {
+        return orderService.purchase(req, idemKey, strategy);
+    }
 
-        var type = TicketType.valueOf(req.ticketType());
-        Order order = switch (strategy) {
-            case "pessimistic" -> orderService.purchasePessimistic(idemKey, req.eventCode(), type, req.quantity());
-            default -> orderService.purchaseOptimistic(idemKey, req.eventCode(), type, req.quantity());
-        };
+    @Operation(summary = "List orders of event with pagination")
+    @GetMapping
+    public Page<OrderDto> list(@RequestParam(name = "event") String event,
+                               @RequestParam(name = "page", defaultValue = "0") int page,
+                               @RequestParam(name = "size", defaultValue = "20") int size) {
+        return orderService.list(event, PageRequest.of(page, size));
+    }
 
-        return ResponseEntity.ok(new OrderResponse(order.getOrderCode(), order.getStatus().name(),
-                order.getQuantity(), order.getCreatedAt()));
+    @GetMapping("/{id}")
+    public OrderDto get(@PathVariable("id") long id) {   // <-- isim verildi
+        return orderService.get(id);
     }
 }

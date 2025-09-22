@@ -1,23 +1,36 @@
 spring:
   application:
     name: ticketing-api
+
   datasource:
-    url: jdbc:postgresql://db:5432/ticketing
+    url: jdbc:postgresql://localhost:5432/ticketing
     username: ticket
-    password: ticket
+    password: ticketpw
   jpa:
     hibernate:
       ddl-auto: validate
+    open-in-view: false
     properties:
-      hibernate.jdbc.time_zone: UTC
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: INFO
+    org.hibernate.SQL: INFO
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
 
-server:
-  tomcat:
-    threads:
-      max: 1
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

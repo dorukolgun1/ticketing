@@ -1,4 +1,4 @@
-package ticketing.repository.entity;
+package ticketing.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

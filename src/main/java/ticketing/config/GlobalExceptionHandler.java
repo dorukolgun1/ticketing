@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import jakarta.persistence.OptimisticLockException;
+import jakarta.persistence.PessimisticLockException;
+
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,12 +26,10 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Object> handleBadJson(HttpMessageNotReadableException ex) {
         return build(HttpStatus.BAD_REQUEST, "Invalid JSON", ex.getMostSpecificCause().getMessage());
     }
-
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Object> handleValidation(MethodArgumentNotValidException ex) {
@@ -39,7 +40,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", details);
     }
 
-
     @ExceptionHandler({
             MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class
@@ -48,18 +48,15 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Invalid request parameter", ex.getMessage());
     }
 
-
     @ExceptionHandler(java.util.NoSuchElementException.class)
     public ResponseEntity<Object> handleNotFound(java.util.NoSuchElementException ex) {
         return build(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
     }
 
-
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<Object> handleIllegalState(IllegalStateException ex) {
         return build(HttpStatus.BAD_REQUEST, "Business rule violation", ex.getMessage());
     }
-
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Object> handleDataIntegrity(DataIntegrityViolationException ex) {
@@ -67,18 +64,29 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "Conflict (constraint violation)", msg);
     }
 
-
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Object> handleHibernateConstraint(ConstraintViolationException ex) {
-        return build(HttpStatus.CONFLICT, "Conflict (constraint violation)", ex.getMessage());
+        return build(HttpStatus.CONFLICT, "Conflict (DB constraint violation)", ex.getMessage());
     }
 
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<Object> handleJakartaValidation(jakarta.validation.ConstraintViolationException ex) {
+        Map<String, String> details = new HashMap<>();
+        ex.getConstraintViolations().forEach(v ->
+                details.put(v.getPropertyPath().toString(), v.getMessage())
+        );
+        return build(HttpStatus.BAD_REQUEST, "Validation error", details);
+    }
+
+    @ExceptionHandler({OptimisticLockException.class, PessimisticLockException.class})
+    public ResponseEntity<Object> handleLocking(Exception ex) {
+        return build(HttpStatus.CONFLICT, "Concurrency conflict", ex.getMessage());
+    }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<Object> handleUnsupported(HttpMediaTypeNotSupportedException ex) {
         return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", ex.getMessage());
     }
-
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleOthers(Exception ex) {

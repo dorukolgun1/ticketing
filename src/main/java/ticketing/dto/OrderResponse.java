@@ -1,4 +1,4 @@
-package ticketing.controller.dto;
+package ticketing.dto;
 
 import java.time.Instant;
 

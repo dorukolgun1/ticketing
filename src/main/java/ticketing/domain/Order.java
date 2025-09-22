@@ -1,9 +1,9 @@
-package ticketing.service.domain;
+package ticketing.domain;
 
 import lombok.Builder;
 import lombok.Value;
-import ticketing.service.domain.enums.OrderStatus;
-import ticketing.service.domain.enums.TicketType;
+import ticketing.enums.OrderStatus;
+import ticketing.enums.TicketType;
 import java.time.Instant;
 
 @Value

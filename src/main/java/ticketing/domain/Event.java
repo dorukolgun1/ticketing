@@ -1,4 +1,4 @@
-package ticketing.service.domain;
+package ticketing.domain;
 
 import lombok.Builder;
 import lombok.Value;

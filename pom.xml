@@ -56,17 +56,17 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+
+        <!-- Flyway -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
-        <!-- Flyway for PostgreSQL (Flyway 10+ için şart) -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
             <version>10.10.0</version>
         </dependency>
-
 
         <!-- Observability -->
         <dependency>
@@ -95,7 +95,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Lombok-MapStruct binding (builder uyumu için) -->
+        <!-- Lombok-MapStruct binding -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok-mapstruct-binding</artifactId>
@@ -125,11 +125,11 @@
     </dependencies>
 
     <build>
-        <!-- ÇIKTI JAR ADI: target/ticketing.jar -->
+        <!-- çıktının adı: target/ticketing.jar -->
         <finalName>ticketing</finalName>
 
         <plugins>
-            <!-- Çalıştırılabilir Boot jar üretmek için -->
+            <!-- Çalıştırılabilir Boot jar -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -142,13 +142,16 @@
                 </executions>
             </plugin>
 
-            <!-- Java 21 + annotation processors -->
+            <!-- Java 21 + -parameters + annotation processors -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>${java.version}</release>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>

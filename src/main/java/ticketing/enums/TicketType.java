@@ -1,3 +1,3 @@
-package ticketing.service.domain.enums;
+package ticketing.enums;
 
 public enum TicketType { VIP, STANDARD, STUDENT }

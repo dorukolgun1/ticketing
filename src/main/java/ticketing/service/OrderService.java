@@ -10,11 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ticketing.dto.OrderDto;
 import ticketing.dto.PurchaseRequest;
-import ticketing.mapper.OrderMapper;
-import ticketing.repository.OrderRepository;
 import ticketing.entity.OrderEntity;
 import ticketing.enums.OrderStatus;
+import ticketing.mapper.OrderMapper;
+import ticketing.repository.OrderRepository;
 
+import java.security.SecureRandom;
 import java.util.NoSuchElementException;
 
 @Service
@@ -27,6 +28,8 @@ public class OrderService {
     private final Counter soldCounter;
     private final Counter conflictCounter;
     private final Timer purchaseTimer;
+
+    private static final SecureRandom RNG = new SecureRandom();
 
     public OrderService(OrderRepository orderRepo,
                         InventoryService inventoryService,
@@ -77,18 +80,18 @@ public class OrderService {
                 if (++attempts >= maxAttempts) {
                     throw new IllegalStateException("Concurrency conflict, please retry");
                 }
-                // küçük backoff istersen: Thread.sleep(10L);
             }
         }
     }
 
     @Transactional
     protected OrderDto doPurchaseOnce(PurchaseRequest req, String idempotencyKey, String strategy) {
-        // Stok rezervasyonu/güncellemesi (enum ile)
+
         inventoryService.reserve(req.eventCode(), req.ticketType(), req.quantity(), strategy);
 
-        // Order kaydet (ENUM alanlar)
+
         OrderEntity ent = OrderEntity.builder()
+                .orderCode(generateOrderCode(req.eventCode())) // <<< ZORUNLU ALAN
                 .eventCode(req.eventCode())
                 .ticketType(req.ticketType())
                 .quantity(req.quantity())
@@ -98,7 +101,20 @@ public class OrderService {
 
         var saved = orderRepo.save(ent);
 
+
         soldCounter.increment(req.quantity());
+
         return mapper.toDto(mapper.toDomain(saved));
+    }
+
+
+    private String generateOrderCode(String eventCode) {
+        String prefix = (eventCode == null || eventCode.isBlank()) ? "ORDER" : eventCode;
+        prefix = prefix.replaceAll("[^A-Z0-9\\-]", "").toUpperCase();
+        long ts = System.currentTimeMillis();
+        int rand = 100000 + RNG.nextInt(900000);
+        String code = prefix + "-" + ts + "-" + rand;
+
+        return code.length() > 64 ? code.substring(0, 64) : code;
     }
 }

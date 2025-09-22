@@ -22,7 +22,7 @@ public class InventoryService {
         this.inventoryMapper = inventoryMapper;
     }
 
-    /** InventoryController için: event'e ait tüm stok satırlarını DTO olarak döner. */
+
     @Transactional(readOnly = true)
     public List<InventoryDto> getByEvent(String eventCode) {
         return inventoryRepository.findByEventCode(eventCode).stream()
@@ -31,7 +31,7 @@ public class InventoryService {
                 .toList();
     }
 
-    /** OrderService tarafından çağrılır: optimistic (default) veya pessimistic rezerve eder. */
+
     @Transactional
     public void reserve(String eventCode, TicketType ticketType, int quantity, String strategy) {
         if ("pessimistic".equalsIgnoreCase(strategy)) {
@@ -51,7 +51,7 @@ public class InventoryService {
         }
     }
 
-    /** Optimistic locking: InventoryEntity'de @Version olmalı. */
+
     @Transactional
     protected void reserveOptimistic(String eventCode, TicketType ticketType, int quantity) {
         InventoryEntity inv = inventoryRepository
@@ -60,10 +60,10 @@ public class InventoryService {
                         eventCode + ", type=" + ticketType));
         ensureAvailable(inv, quantity);
         inv.setSold(inv.getSold() + quantity);
-        // flush sırasında @Version artar; conflict olursa OptimisticLockException fırlar
+
     }
 
-    /** Pessimistic locking: satırı FOR UPDATE ile kilitler. */
+
     @Transactional
     protected void reservePessimistic(String eventCode, TicketType ticketType, int quantity) {
         InventoryEntity inv = inventoryRepository

@@ -4,10 +4,7 @@ import lombok.Builder;
 import lombok.Value;
 import ticketing.enums.TicketType;
 
-/**
- * Domain katmanı modeli – immutable.
- * Entity detayları (JPA annot.) yoktur.
- */
+
 @Value
 @Builder
 public class Inventory {

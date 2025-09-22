@@ -26,6 +26,10 @@ public class OrderEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Sipariş için zorunlu ve unique kod (DB’de NOT NULL & UNIQUE) */
+    @Column(name = "order_code", nullable = false, unique = true, length = 64)
+    private String orderCode;
+
     @Column(name = "event_code", nullable = false, length = 64)
     private String eventCode;
 

@@ -143,6 +143,4 @@ Doruk Olgun
 🌍 Loves building systems that solve real-world concurrency problems
 ---
 
-### Notes
-All credentials in this repository (DB passwords, Grafana/PgAdmin logins) are **demo values only**.  
-In a real-world setup, these would be stored securely using **environment variables (.env files)** or a **secrets manager**.
+

@@ -1,59 +1,76 @@
-# 🎟️ Ticketing System (Backend)
+# 🎟️ Real-Time Event Ticketing System (Backend)
 
-## Overview
-This project is a **real-time event ticketing system backend** built with **Java 21** and **Spring Boot**.  
-It provides APIs for **event management, ticket reservations, and purchase workflows** with strong focus on:
-- **Data consistency** (idempotency, optimistic/pessimistic locking)
-- **Scalability** (Docker, Prometheus, Grafana monitoring)
-- **Resilience** (global exception handling, retries, conflict detection)
+## 🚀 Project Vision
+Imagine thousands of fans trying to buy concert tickets at the same time.  
+This system was designed to handle exactly that scenario.
 
-⚡ **Note:**  
-This project does not include a user interface (UI). Instead, all functionality is exposed via REST APIs.  
-It is designed as the **backend foundation** for a potential web or mobile app. API endpoints can be tested with **Postman** or integrated with any frontend.
+The **Ticketing System** is a **high-concurrency backend** built with **Java 21** and **Spring Boot 3**, focusing on:
+- ⚡ **Speed & Concurrency** → Virtual Threads for handling massive parallel requests
+- 🔒 **Data Integrity** → Optimistic & Pessimistic Locking to prevent overselling
+- 📊 **Observability** → Live metrics and dashboards with Prometheus & Grafana
+- 🛡️ **Resilience** → Idempotency keys, retry mechanisms, and robust error handling
 
----
-
-## 🔑 Features
-- **Event Management**: Create and query events by code.
-- **Ticket Inventory**: Maintain stock levels per event & ticket type.
-- **Order Management**:
-    - Reserve & purchase tickets
-    - Idempotency key support (safe retries, no duplicate purchases)
-    - Optimistic and pessimistic locking strategies
-- **Observability**:
-    - Metrics exposed via `/actuator/prometheus`
-    - Preconfigured Grafana dashboard for live monitoring
-- **Database Migrations**: Flyway for schema versioning.
-- **Error Handling**: Global exception handler → returns clear HTTP status codes (`400`, `404`, `409`, `500`).
+This is not just a demo — it’s a **production-style backend foundation** that could power a real-world ticketing platform.
 
 ---
 
-## 🛠️ Tech Stack
-- **Java 21** (Virtual Threads enabled for concurrency)
-- **Spring Boot 3** (Web, JPA, Validation, Actuator)
-- **PostgreSQL** + **Flyway** (DB migrations)
-- **Docker Compose** (multi-service orchestration)
-- **Micrometer + Prometheus + Grafana** (metrics & dashboards)
-- **MapStruct + Lombok** (clean domain & DTO mapping)
+## ✨ Key Highlights
+- **Idempotent Purchases**  
+  No double-charging: requests with the same idempotency key return the same result.
+
+- **Locking Strategies**  
+  Choose between **optimistic** or **pessimistic locking** for different concurrency trade-offs.
+
+- **Scalable Observability**  
+  Out-of-the-box integration with **Prometheus** and **Grafana** for latency, conflicts, and throughput tracking.
+
+- **Resilient Architecture**
+  - Automatic DB migrations with Flyway
+  - Centralized Global Exception Handler → clean error responses (`400`, `404`, `409`, `500`)
+  - Retry on concurrency conflicts
+
+- **API-First Approach**  
+  Although there is no UI, the system exposes a fully documented REST API (Swagger) → ready for frontend or mobile integration.
 
 ---
 
-## 🚀 How to Run
+## 🛠️ Technology Stack
+- **Language**: Java 21 (Virtual Threads, Records, Builders)
+- **Framework**: Spring Boot 3 (Web, Data JPA, Validation, Actuator)
+- **Database**: PostgreSQL 16 + Flyway migrations
+- **Containerization**: Docker & Docker Compose
+- **Monitoring**: Micrometer + Prometheus + Grafana
+- **Mapping & Boilerplate Reduction**: MapStruct & Lombok
+
+---
+
+## 🏗️ How It Works
+1. **Events** are created with codes (e.g., `EVNT-ROCK-2025`).
+2. **Inventory** is initialized per ticket type (VIP, Standard, Student).
+3. **Orders** are placed:
+  - User sends a `PurchaseRequest` with `Idempotency-Key`.
+  - System reserves stock → saves order → returns confirmation.
+4. **Concurrency Safety**: If 1000 users hit “Buy” at the same second:
+  - Some will succeed instantly.
+  - Others may retry (optimistic locking) or wait for a DB lock (pessimistic).
+
+---
+
+## 🖥️ Running the Project
 
 ### Prerequisites
-- Docker & Docker Compose
+- Docker + Docker Compose
 - Maven
 
-### Steps
+### Setup
 ```bash
-# 1. Build the project
+# Build
 mvn -DskipTests clean package
 
-# 2. Start all services (app, db, prometheus, grafana, pgadmin)
+# Run everything: app, db, pgadmin, prometheus, grafana
 docker compose up -d --build
-Services:
-
-App → http://localhost:8080
+Services
+API → http://localhost:8080
 
 Swagger → http://localhost:8080/swagger-ui/index.html
 
@@ -63,69 +80,64 @@ Grafana → http://localhost:3000 (admin / admin123)
 
 PgAdmin → http://localhost:5050
 
-📡 Example API Calls
-1. Create Event
+📡 API Examples
+Create Event
 http
 Copy code
-POST http://localhost:8080/api/v1/events
-Content-Type: application/json
-
+POST /api/v1/events
 {
   "code": "EVNT-ROCK-2025",
   "name": "Rock Festival",
   "startTime": "2025-12-01T19:00:00Z",
   "endTime": "2025-12-01T22:00:00Z"
 }
-2. Purchase Ticket
+Purchase Ticket
 http
 Copy code
-POST http://localhost:8080/api/v1/orders/purchase?strategy=optimistic
-Content-Type: application/json
-Idempotency-Key: 11111111-1111-1111-1111-111111111111
-
+POST /api/v1/orders/purchase?strategy=optimistic
+Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
 {
   "eventCode": "EVNT-ROCK-2025",
   "ticketType": "STANDARD",
-  "quantity": 1
+  "quantity": 2
 }
-3. List Orders
+List Orders
 http
 Copy code
-GET http://localhost:8080/api/v1/orders?event=EVNT-ROCK-2025&page=0&size=10
-4. Inventory Check
+GET /api/v1/orders?event=EVNT-ROCK-2025&page=0&size=10
+Check Inventory
 http
 Copy code
-GET http://localhost:8080/api/v1/inventory/EVNT-ROCK-2025
-📊 Monitoring
-Prometheus scrapes application metrics every 5s.
+GET /api/v1/inventory/EVNT-ROCK-2025
+📊 Monitoring & Metrics
+Prometheus scrapes /actuator/prometheus every 5s.
 
-Grafana dashboard includes:
+Grafana Dashboard includes:
 
-Tickets sold total
+🎫 Total Tickets Sold
 
-Purchase conflicts
+⚠️ Purchase Conflicts
 
-Purchase latency (P95, P99)
+⏱️ Purchase Latency (P95/P99)
 
-HTTP request metrics
+🌐 HTTP Request Rates
 
-🎯 Why This Project?
-This project demonstrates:
+This makes performance bottlenecks and concurrency conflicts visible in real-time.
 
-Ability to design scalable backend systems
+🎯 Why This Project Stands Out
+Demonstrates real-world backend challenges: concurrency, consistency, observability.
 
-Applying modern Java features (virtual threads, records, builders)
+Uses modern Java (virtual threads) for high-concurrency performance.
 
-Building production-like infrastructure (DB migrations, metrics, observability)
+Structured for scalability → frontend can be easily added.
 
-Delivering a system that can easily be extended with a frontend in the future.
+Shows both engineering depth and production readiness.
 
 👨‍💻 Author
 Doruk Olgun
 
-Computer Science student @ University of Debrecen
+🎓 Computer Science Student, University of Debrecen
 
-Interested in backend development, cloud, and scalable architectures
+💡 Passionate about backend development, cloud computing, and scalable systems
 
-yaml
-Copy code
+🌍 Loves building systems that solve real-world concurrency problems

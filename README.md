@@ -83,7 +83,6 @@ PgAdmin → http://localhost:5050
 📡 API Examples
 Create Event
 http
-Copy code
 POST /api/v1/events
 {
   "code": "EVNT-ROCK-2025",
@@ -93,7 +92,6 @@ POST /api/v1/events
 }
 Purchase Ticket
 http
-Copy code
 POST /api/v1/orders/purchase?strategy=optimistic
 Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
 {
@@ -103,11 +101,10 @@ Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
 }
 List Orders
 http
-Copy code
 GET /api/v1/orders?event=EVNT-ROCK-2025&page=0&size=10
+
 Check Inventory
 http
-Copy code
 GET /api/v1/inventory/EVNT-ROCK-2025
 📊 Monitoring & Metrics
 Prometheus scrapes /actuator/prometheus every 5s.

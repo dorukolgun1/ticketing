@@ -1,6 +1,9 @@
 # 🎟️ Real-Time Event Ticketing System (Backend)
+![CI Pipeline](https://github.com/dorukolgun1/ticketing/actions/workflows/ci.yml/badge.svg)
 
 ## 🚀 Project Vision
+
+
 Imagine thousands of fans trying to buy concert tickets at the same time.  
 This system was designed to handle exactly that scenario.
 

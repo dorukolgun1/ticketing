@@ -1,17 +1,19 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:16
     container_name: ticketing-db
     environment:
-      POSTGRES_DB: ticketing
-      POSTGRES_USER: ticket
-      POSTGRES_PASSWORD: ticketpw
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "${DB_PORT_HOST:-5432}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ticket -d ticketing"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -25,23 +27,28 @@ services:
       db:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      # Aşağıdaki 4 env ile profile’a gerek kalmadan DB ayarını garanti ediyoruz
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ticketing
-      SPRING_DATASOURCE_USERNAME: ticket
-      SPRING_DATASOURCE_PASSWORD: ticketpw
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      # Spring profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-docker}
+
+      # DB ayarlarını .env'den al
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-validate}
+
+      # (opsiyonel) JVM memory ve GC
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:-"-XX:+UseZGC -XX:MaxRAMPercentage=75"}
     ports:
-      - "8080:8080"
+      - "${APP_PORT_HOST:-8080}:8080"
 
   pgadmin:
     image: dpage/pgadmin4:8.11
     container_name: ticketing-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT_HOST:-5050}:80"
     depends_on:
       db:
         condition: service_healthy
@@ -52,7 +59,7 @@ services:
     volumes:
       - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT_HOST:-9090}:9090"
     depends_on:
       app:
         condition: service_started
@@ -61,10 +68,10 @@ services:
     image: grafana/grafana:11.1.4
     container_name: ticketing-grafana
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin123}
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT_HOST:-3000}:3000"
     volumes:
       - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources:ro
       - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro

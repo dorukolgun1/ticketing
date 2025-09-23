@@ -79,7 +79,7 @@ Swagger → http://localhost:8080/swagger-ui/index.html
 
 Prometheus → http://localhost:9090
 
-Grafana → http://localhost:3000 (admin / admin123)
+Grafana → http://localhost:3000 
 
 PgAdmin → http://localhost:5050
 
@@ -120,7 +120,7 @@ Grafana Dashboard includes:
 
 ⏱️ Purchase Latency (P95/P99)
 
-🌐 HTTP Request Rates
+🌐 HTTP Request Rates(Throughput 🚀)
 
 This makes performance bottlenecks and concurrency conflicts visible in real-time.
 

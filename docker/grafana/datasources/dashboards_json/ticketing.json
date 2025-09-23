@@ -2,7 +2,7 @@
   "uid": "ticketing-main",
   "title": "Ticketing Overview",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "panels": [
     {
       "type": "stat",
@@ -18,19 +18,27 @@
     },
     {
       "type": "graph",
-      "title": "Purchase Latency (P95)",
+      "title": "Purchase Latency (P95 & P99)",
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum(rate(purchase_latency_bucket[1m])) by (le))"
+          "expr": "histogram_quantile(0.95, sum(rate(purchase_latency_bucket[1m])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(purchase_latency_bucket[1m])) by (le))",
+          "legendFormat": "p99"
         }
       ],
       "gridPos": { "x": 0, "y": 6, "w": 16, "h": 8 }
     },
     {
       "type": "graph",
-      "title": "HTTP Server Requests (count)",
+      "title": "HTTP Throughput (RPS)",
       "targets": [
-        { "expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri)" }
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count[1m]))",
+          "legendFormat": "req/s"
+        }
       ],
       "gridPos": { "x": 0, "y": 14, "w": 16, "h": 8 }
     }

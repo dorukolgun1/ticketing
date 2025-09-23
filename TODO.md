@@ -17,7 +17,7 @@
 
 - 📈 **Scalability**
     - Deploy to Kubernetes for horizontal scaling experiments.
-    - Configure autoscaling (HPA) and monitoring with Prometheus/Grafana.
+    
 
 - 📖 **API Documentation**
     - Add detailed OpenAPI/Swagger descriptions.

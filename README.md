@@ -1,9 +1,11 @@
 # 🎟️ Real-Time Event Ticketing System (Backend)
+
 ![CI Pipeline](https://github.com/dorukolgun1/ticketing/actions/workflows/ci.yml/badge.svg)
 ![Kubernetes Tested](https://img.shields.io/badge/Kubernetes-Tested-brightgreen?logo=kubernetes&logoColor=white)
 
-## 🚀 Project Vision
+---
 
+## 🚀 Project Vision
 
 Imagine thousands of fans trying to buy concert tickets at the same time.  
 This system was designed to handle exactly that scenario.
@@ -14,27 +16,19 @@ The **Ticketing System** is a **high-concurrency backend** built with **Java 21*
 - 📊 **Observability** → Live metrics and dashboards with Prometheus & Grafana
 - 🛡️ **Resilience** → Idempotency keys, retry mechanisms, and robust error handling
 
-This is not just a demo it’s a **production-style backend foundation** that could power a real-world ticketing platform.
+This is not just a demo – it’s a **production-style backend foundation** that could power a real-world ticketing platform.
 
 ---
 
 ## ✨ Key Highlights
-- **Idempotent Purchases**  
-  No double-charging: requests with the same idempotency key return the same result.
-
-- **Locking Strategies**  
-  Choose between **optimistic** or **pessimistic locking** for different concurrency trade-offs.
-
-- **Scalable Observability**  
-  Out-of-the-box integration with **Prometheus** and **Grafana** for latency, conflicts, and throughput tracking.
-
+- **Idempotent Purchases** → no double-charging with same idempotency key
+- **Locking Strategies** → optimistic & pessimistic locking supported
+- **Scalable Observability** → Prometheus + Grafana dashboards for latency, conflicts, throughput
 - **Resilient Architecture**
   - Automatic DB migrations with Flyway
-  - Centralized Global Exception Handler → clean error responses (`400`, `404`, `409`, `500`)
+  - Global Exception Handler → clean error responses (`400`, `404`, `409`, `500`)
   - Retry on concurrency conflicts
-
-- **API-First Approach**  
-  Although there is no UI, the system exposes a fully documented REST API (Swagger) → ready for frontend or mobile integration.
+- **API-First Approach** → documented REST API (Swagger), ready for frontend/mobile integration
 
 ---
 
@@ -44,7 +38,7 @@ This is not just a demo it’s a **production-style backend foundation** that co
 - **Database**: PostgreSQL 16 + Flyway migrations
 - **Containerization**: Docker & Docker Compose
 - **Monitoring**: Micrometer + Prometheus + Grafana
-- **Mapping & Boilerplate Reduction**: MapStruct & Lombok
+- **Boilerplate Reduction**: MapStruct & Lombok
 
 ---
 
@@ -54,13 +48,12 @@ This is not just a demo it’s a **production-style backend foundation** that co
 3. **Orders** are placed:
   - User sends a `PurchaseRequest` with `Idempotency-Key`.
   - System reserves stock → saves order → returns confirmation.
-4. **Concurrency Safety**: If 1000 users hit “Buy” at the same second:
-  - Some will succeed instantly.
-  - Others may retry (optimistic locking) or wait for a DB lock (pessimistic).
+4. **Concurrency Safety**:
+  - If 1000 users hit “Buy” simultaneously, some succeed instantly, others retry/wait.
 
 ---
 
-## 🖥️ Running the Project
+## 🖥️ Running with Docker
 
 ### Prerequisites
 - Docker + Docker Compose
@@ -71,7 +64,7 @@ This is not just a demo it’s a **production-style backend foundation** that co
 # Build
 mvn -DskipTests clean package
 
-# Run everything: app, db, pgadmin, prometheus, grafana
+# Run everything (app, db, pgadmin, prometheus, grafana)
 docker compose up -d --build
 Services
 API → http://localhost:8080
@@ -80,13 +73,48 @@ Swagger → http://localhost:8080/swagger-ui/index.html
 
 Prometheus → http://localhost:9090
 
-Grafana → http://localhost:3000 
+Grafana → http://localhost:3000
 
 PgAdmin → http://localhost:5050
 
+☸️ Running on Kubernetes
+Tested locally with Minikube.
+
+Start Minikube
+bash
+Copy code
+minikube start --cpus=4 --memory=6g --driver=docker
+Build & Load Docker Image
+bash
+Copy code
+docker build -t ticketing-app:v1 .
+minikube image load ticketing-app:v1 --overwrite=true
+Apply Manifests
+bash
+Copy code
+kubectl apply -f k8s/
+Access Service
+Port-forward quick test:
+
+bash
+Copy code
+kubectl -n ticketing port-forward svc/ticketing-app 8080:8080
+→ http://localhost:8080/actuator/health
+
+Or via NodePort:
+
+bash
+Copy code
+kubectl -n ticketing patch svc/ticketing-app -p '{"spec":{"type":"NodePort"}}'
+minikube service ticketing-app -n ticketing --url
+Scaling
+bash
+Copy code
+kubectl -n ticketing scale deploy/ticketing-app --replicas=3
 📡 API Examples
 Create Event
 http
+Copy code
 POST /api/v1/events
 {
   "code": "EVNT-ROCK-2025",
@@ -96,6 +124,7 @@ POST /api/v1/events
 }
 Purchase Ticket
 http
+Copy code
 POST /api/v1/orders/purchase?strategy=optimistic
 Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
 {
@@ -105,87 +134,38 @@ Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
 }
 List Orders
 http
+Copy code
 GET /api/v1/orders?event=EVNT-ROCK-2025&page=0&size=10
-
 Check Inventory
 http
+Copy code
 GET /api/v1/inventory/EVNT-ROCK-2025
 📊 Monitoring & Metrics
 Prometheus scrapes /actuator/prometheus every 5s.
 
-Grafana Dashboard includes:
+Grafana dashboard includes:
 
 🎫 Total Tickets Sold
 
 ⚠️ Purchase Conflicts
 
-⏱️ Purchase Latency (P95/P99)
+⏱️ Latency (P95/P99)
 
-🌐 HTTP Request Rates(Throughput 🚀)
+🌐 HTTP Request Rates (Throughput 🚀)
 
-This makes performance bottlenecks and concurrency conflicts visible in real-time.
-
-☸️ Kubernetes Deployment
-
-This project can also run inside a Kubernetes cluster (tested locally with Minikube).
-
-Steps
-
-Start Minikube
-
-minikube start --cpus=4 --memory=6g --driver=docker
-
-
-Build and load Docker image
-
-docker build -t ticketing-app:v1 .
-minikube image load ticketing-app:v1 --overwrite=true
-
-
-Apply manifests
-
-kubectl apply -f k8s/
-
-
-Expose the service
-
-Quick test:
-
-kubectl -n ticketing port-forward svc/ticketing-app 8080:8080
-
-
-→ http://localhost:8080/actuator/health
-
-Or with NodePort:
-
-kubectl -n ticketing patch svc/ticketing-app -p '{"spec":{"type":"NodePort"}}'
-minikube service ticketing-app -n ticketing --url
-
-
-Scaling
-
-kubectl -n ticketing scale deploy ticketing-app --replicas=3
-
-
-This demonstrates that the system is scalable and can run in a real container orchestration platform.
+This makes bottlenecks and conflicts visible in real time.
 
 🎯 Why This Project Stands Out
-Demonstrates real-world backend challenges: concurrency, consistency, observability.
+Demonstrates real-world backend challenges: concurrency, consistency, observability
 
-Uses modern Java (virtual threads) for high-concurrency performance.
+Uses modern Java (virtual threads) for high-concurrency performance
 
-Structured for scalability → frontend can be easily added.
+Structured for scalability → frontend can be easily added
 
-Shows both engineering depth and production readiness.
+Shows both engineering depth and production readiness
 
 👨‍💻 Author
 Doruk Olgun
-
-🎓 Computer Science Student, University of Debrecen
-
+🎓 Computer Science Student @ University of Debrecen
 💡 Passionate about backend development, cloud computing, and scalable systems
-
 🌍 Loves building systems that solve real-world concurrency problems
----
-
-

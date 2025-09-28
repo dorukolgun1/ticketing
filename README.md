@@ -83,11 +83,14 @@ Tested locally with Minikube.
 
 Start Minikube
 minikube start --cpus=4 --memory=6g --driver=docker
+
 Build & Load Docker Image
 docker build -t ticketing-app:v1 .
 minikube image load ticketing-app:v1 --overwrite=true
+
 Apply Manifests
 kubectl apply -f k8s/
+
 Access Service
 Port-forward quick test:
 kubectl -n ticketing port-forward svc/ticketing-app 8080:8080

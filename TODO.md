@@ -15,10 +15,6 @@
     - Secure API endpoints with role-based access control (RBAC).
     - Store sensitive credentials using environment variables or a secrets manager.
 
-- 📈 **Scalability**
-    - Deploy to Kubernetes for horizontal scaling experiments.
-    
-
 - 📖 **API Documentation**
     - Add detailed OpenAPI/Swagger descriptions.
     - Publish an API usage guide for developers.

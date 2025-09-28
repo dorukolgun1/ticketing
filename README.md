@@ -37,6 +37,7 @@ This is not just a demo – it’s a **production-style backend foundation** tha
 - **Framework**: Spring Boot 3 (Web, Data JPA, Validation, Actuator)
 - **Database**: PostgreSQL 16 + Flyway migrations
 - **Containerization**: Docker & Docker Compose
+- **Orchestration**: Kubernetes (tested on Minikube)
 - **Monitoring**: Micrometer + Prometheus + Grafana
 - **Boilerplate Reduction**: MapStruct & Lombok
 
@@ -81,40 +82,27 @@ PgAdmin → http://localhost:5050
 Tested locally with Minikube.
 
 Start Minikube
-bash
-Copy code
 minikube start --cpus=4 --memory=6g --driver=docker
 Build & Load Docker Image
-bash
-Copy code
 docker build -t ticketing-app:v1 .
 minikube image load ticketing-app:v1 --overwrite=true
 Apply Manifests
-bash
-Copy code
 kubectl apply -f k8s/
 Access Service
 Port-forward quick test:
-
-bash
-Copy code
 kubectl -n ticketing port-forward svc/ticketing-app 8080:8080
 → http://localhost:8080/actuator/health
 
 Or via NodePort:
-
-bash
-Copy code
 kubectl -n ticketing patch svc/ticketing-app -p '{"spec":{"type":"NodePort"}}'
 minikube service ticketing-app -n ticketing --url
 Scaling
-bash
-Copy code
 kubectl -n ticketing scale deploy/ticketing-app --replicas=3
+
+
 📡 API Examples
 Create Event
 http
-Copy code
 POST /api/v1/events
 {
   "code": "EVNT-ROCK-2025",
@@ -124,7 +112,6 @@ POST /api/v1/events
 }
 Purchase Ticket
 http
-Copy code
 POST /api/v1/orders/purchase?strategy=optimistic
 Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
 {
@@ -134,11 +121,9 @@ Idempotency-Key: 123e4567-e89b-12d3-a456-426614174000
 }
 List Orders
 http
-Copy code
 GET /api/v1/orders?event=EVNT-ROCK-2025&page=0&size=10
 Check Inventory
 http
-Copy code
 GET /api/v1/inventory/EVNT-ROCK-2025
 📊 Monitoring & Metrics
 Prometheus scrapes /actuator/prometheus every 5s.

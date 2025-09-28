@@ -1,5 +1,6 @@
 # 🎟️ Real-Time Event Ticketing System (Backend)
 ![CI Pipeline](https://github.com/dorukolgun1/ticketing/actions/workflows/ci.yml/badge.svg)
+![Kubernetes Tested](https://img.shields.io/badge/Kubernetes-Tested-brightgreen?logo=kubernetes&logoColor=white)
 
 ## 🚀 Project Vision
 
@@ -123,6 +124,50 @@ Grafana Dashboard includes:
 🌐 HTTP Request Rates(Throughput 🚀)
 
 This makes performance bottlenecks and concurrency conflicts visible in real-time.
+
+☸️ Kubernetes Deployment
+
+This project can also run inside a Kubernetes cluster (tested locally with Minikube).
+
+Steps
+
+Start Minikube
+
+minikube start --cpus=4 --memory=6g --driver=docker
+
+
+Build and load Docker image
+
+docker build -t ticketing-app:v1 .
+minikube image load ticketing-app:v1 --overwrite=true
+
+
+Apply manifests
+
+kubectl apply -f k8s/
+
+
+Expose the service
+
+Quick test:
+
+kubectl -n ticketing port-forward svc/ticketing-app 8080:8080
+
+
+→ http://localhost:8080/actuator/health
+
+Or with NodePort:
+
+kubectl -n ticketing patch svc/ticketing-app -p '{"spec":{"type":"NodePort"}}'
+minikube service ticketing-app -n ticketing --url
+
+
+Scaling
+
+kubectl -n ticketing scale deploy ticketing-app --replicas=3
+
+
+This demonstrates that the system is scalable and can run in a real container orchestration platform.
 
 🎯 Why This Project Stands Out
 Demonstrates real-world backend challenges: concurrency, consistency, observability.

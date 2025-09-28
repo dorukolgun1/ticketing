@@ -1,0 +1,7 @@
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: ticketing-app:v1
+          imagePullPolicy: IfNotPresent
